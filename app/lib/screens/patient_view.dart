@@ -16,7 +16,15 @@ enum _QuestionAnswer { tookIt, missed }
 enum _DoseCorrection { taken, missed, clear }
 
 class PatientView extends ConsumerStatefulWidget {
-  const PatientView({super.key});
+  const PatientView({super.key, required this.personId, this.active = true});
+
+  /// The one person this tab belongs to (James's ruling: a top-level tab per
+  /// patient, no sub-selection inside the view).
+  final String personId;
+
+  /// Only the visible tab may fire pop-ups; inactive siblings in the
+  /// IndexedStack stay silent and rely on their tab badge + banners.
+  final bool active;
 
   @override
   ConsumerState<PatientView> createState() => _PatientViewState();
@@ -30,41 +38,41 @@ class _PatientViewState extends ConsumerState<PatientView> {
   @override
   Widget build(BuildContext context) {
     final circle = ref.watch(careCircleProvider);
-    final selectedId = ref.watch(selectedPatientProvider);
-    if (circle.people.isEmpty || selectedId == null) {
-      return const Center(child: Text('No one in the circle yet.'));
+    final person = circle.personById(widget.personId);
+    if (person == null) {
+      return const Center(child: Text('This person left the circle.'));
     }
 
-    ref.listen(patientActionDosesProvider(selectedId), (previous, next) {
+    ref.listen(patientActionDosesProvider(widget.personId), (previous, next) {
       _onEscalation(previous, next);
     });
 
-    final doses = ref.watch(todayDosesProvider(selectedId));
-    final pending = ref.watch(pendingQuestionsProvider(selectedId));
+    final doses = ref.watch(todayDosesProvider(widget.personId));
+    final pending = ref.watch(pendingQuestionsProvider(widget.personId));
 
     return ListView(
-      key: const PageStorageKey('patient-view'),
+      key: ValueKey('patient-list-${widget.personId}'),
       padding: const EdgeInsets.all(16),
       children: [
-        Text('Patient view', style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 6,
+        Row(
           children: [
-            for (final person in circle.people)
-              ChoiceChip(
-                key: ValueKey('patient-${person.id}'),
-                avatar: CircleAvatar(
-                  backgroundColor: personColor(person),
-                  radius: 8,
+            CircleAvatar(
+              backgroundColor: personColor(person),
+              child: Text(
+                person.name.characters.first,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
                 ),
-                label: Text(person.name),
-                selected: person.id == selectedId,
-                onSelected: (_) => ref
-                    .read(selectedPatientProvider.notifier)
-                    .select(person.id),
               ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                '${person.name} — patient view',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 14),
@@ -98,6 +106,8 @@ class _PatientViewState extends ConsumerState<PatientView> {
 
   void _onEscalation(List<ScheduledDose>? previous, List<ScheduledDose> next) {
     if (previous == null) return;
+    // Inactive tabs never pop dialogs/snacks; their badge carries the signal.
+    if (!widget.active || !mounted) return;
     final before = {for (final dose in previous) dose.key: dose.urgency};
     final newlyDue = <ScheduledDose>[];
     final newlyClosing = <ScheduledDose>[];

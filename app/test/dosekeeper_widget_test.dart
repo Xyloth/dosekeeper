@@ -31,6 +31,14 @@ Future<void> selectRole(WidgetTester tester, String role) async {
   await tester.pump();
 }
 
+/// Patients are top-level tabs now (one per person, own attention badge).
+Future<void> selectPatientTab(WidgetTester tester, String personId) async {
+  final finder = find.byKey(ValueKey('role-patient-$personId'));
+  await tester.ensureVisible(finder);
+  await tester.tap(finder);
+  await tester.pump();
+}
+
 Future<Finder> ensureKeyInVisibleList(WidgetTester tester, String key) async {
   final finder = find.byKey(ValueKey(key));
   if (finder.evaluate().isEmpty) {
@@ -145,16 +153,19 @@ void main() {
     const date = '2026-07-11';
     final key = DoseEvent.keyOf('p-leo', 'm-inh', date, DoseSlot.morning);
 
-    await tester.tap(find.byKey(const ValueKey('patient-p-leo')));
-    await tester.pump();
+    await selectPatientTab(tester, 'p-leo');
     await tapPatientControl(tester, 'patient-taken-$key');
     await tester.pump();
 
     expect(harness.container.read(selectedPatientProvider), 'p-leo');
-    final chip = tester.widget<ChoiceChip>(
-      find.byKey(const ValueKey('patient-p-leo')),
+    final switcher = tester.widget<SegmentedButton<int>>(
+      find.byType(SegmentedButton<int>),
     );
-    expect(chip.selected, isTrue);
+    expect(
+      switcher.selected,
+      {1},
+      reason: "Leo's tab must stay selected after recording his dose",
+    );
   });
 
   testWidgets('multiple threshold questions are serialized, never stacked', (
@@ -263,11 +274,14 @@ void main() {
     expect(restored.recordedAt, original.recordedAt);
   });
 
-  testWidgets('all five views are reachable and retain shared state', (
+  testWidgets('every view is reachable and retains shared state', (
     tester,
   ) async {
     await pumpDoseKeeper(tester, now: DateTime(2026, 7, 11, 15));
-    expect(find.text('Patient view'), findsOneWidget);
+    expect(find.text('Grandma Rose — patient view'), findsOneWidget);
+
+    await selectPatientTab(tester, 'p-leo');
+    expect(find.text('Leo (age 9) — patient view'), findsOneWidget);
 
     await selectRole(tester, 'Caregiver');
     expect(find.text('Caregiver dashboard'), findsOneWidget);
@@ -294,15 +308,13 @@ void main() {
 
     await pumpDoseKeeper(tester, now: DateTime(2026, 7, 11, 20, 30));
     expect(tester.takeException(), isNull);
-    for (final role in [
-      'Caregiver',
-      'Provider',
-      'Circle',
-      'Settings',
-      'Patient',
-    ]) {
+    for (final role in ['Caregiver', 'Provider', 'Circle', 'Settings']) {
       await selectRole(tester, role);
       expect(tester.takeException(), isNull, reason: '$role overflowed');
+    }
+    for (final personId in ['p-rose', 'p-leo']) {
+      await selectPatientTab(tester, personId);
+      expect(tester.takeException(), isNull, reason: '$personId overflowed');
     }
   });
 

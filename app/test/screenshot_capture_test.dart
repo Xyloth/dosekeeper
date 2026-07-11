@@ -100,6 +100,8 @@ void main() {
     if (_captureRequested) await _loadCaptureFonts();
   });
 
+  // Tab indices: patients occupy 0..n-1 (seed family n=2), then the four
+  // shared views. Rose's patient tab is 0; Caregiver starts at 2.
   testWidgets(
     'capture Patient release view',
     (tester) => _captureRole(tester, role: 0, filename: 'patient.png'),
@@ -109,7 +111,7 @@ void main() {
     'capture Caregiver release view',
     (tester) => _captureRole(
       tester,
-      role: 1,
+      role: 2,
       filename: 'caregiver.png',
       includeMiss: true,
     ),
@@ -119,7 +121,7 @@ void main() {
     'capture Provider release view',
     (tester) => _captureRole(
       tester,
-      role: 2,
+      role: 3,
       filename: 'provider.png',
       includeMiss: true,
     ),
@@ -127,12 +129,12 @@ void main() {
   );
   testWidgets(
     'capture Circle release view',
-    (tester) => _captureRole(tester, role: 3, filename: 'circle.png'),
+    (tester) => _captureRole(tester, role: 4, filename: 'circle.png'),
     skip: !_captureRequested,
   );
   testWidgets(
     'capture Settings release view',
-    (tester) => _captureRole(tester, role: 4, filename: 'settings.png'),
+    (tester) => _captureRole(tester, role: 5, filename: 'settings.png'),
     skip: !_captureRequested,
   );
 }

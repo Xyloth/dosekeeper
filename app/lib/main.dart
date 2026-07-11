@@ -56,14 +56,27 @@ class DoseKeeperApp extends StatelessWidget {
 }
 
 class _RoleDestination {
-  const _RoleDestination(this.label, this.icon, this.view);
+  const _RoleDestination({
+    required this.label,
+    required this.icon,
+    required this.view,
+    required this.keyId,
+    this.badgeCount = 0,
+    this.badgeSemantics,
+  });
 
   final String label;
   final IconData icon;
   final Widget view;
+  final String keyId;
+  final int badgeCount;
+  final String? badgeSemantics;
 }
 
-/// One running app, five perspectives, and one Riverpod source of truth.
+/// One running app, one Riverpod source of truth — and a top-level tab per
+/// PATIENT (James's ruling): each person in the circle gets their own tab
+/// with their own red attention badge, alongside Caregiver / Provider /
+/// Circle / Settings. No sub-selection inside the patient view.
 class RoleShell extends ConsumerStatefulWidget {
   const RoleShell({super.key, this.initialRole = 0});
 
@@ -74,27 +87,70 @@ class RoleShell extends ConsumerStatefulWidget {
 }
 
 class _RoleShellState extends ConsumerState<RoleShell> {
-  static const _destinations = [
-    _RoleDestination('Patient', Icons.medication_outlined, PatientView()),
-    _RoleDestination('Caregiver', Icons.favorite_outline, CaregiverView()),
-    _RoleDestination('Provider', Icons.badge_outlined, ProviderTimelineView()),
-    _RoleDestination('Circle', Icons.group_outlined, PeopleView()),
-    _RoleDestination('Settings', Icons.settings_outlined, SettingsView()),
-  ];
-
   late int _role;
 
   @override
   void initState() {
     super.initState();
-    _role = widget.initialRole.clamp(0, _destinations.length - 1);
+    _role = widget.initialRole;
   }
 
   @override
   Widget build(BuildContext context) {
+    final people = ref.watch(
+      careCircleProvider.select((circle) => circle.people),
+    );
     final alerts = ref.watch(caregiverAlertsProvider);
     final persistence = ref.watch(persistenceStatusProvider);
     final wide = MediaQuery.sizeOf(context).width >= 520;
+
+    final totalTabs = people.length + 4;
+    final role = _role.clamp(0, totalTabs - 1);
+
+    final destinations = <_RoleDestination>[
+      for (var i = 0; i < people.length; i++)
+        _RoleDestination(
+          label: people[i].name,
+          icon: Icons.medication_outlined,
+          keyId: 'role-patient-${people[i].id}',
+          badgeCount: ref.watch(patientAttentionCountProvider(people[i].id)),
+          badgeSemantics:
+              '${people[i].name}, '
+              '${ref.watch(patientAttentionCountProvider(people[i].id))} '
+              'attention items',
+          view: PatientView(
+            key: ValueKey('patient-view-${people[i].id}'),
+            personId: people[i].id,
+            active: role == i,
+          ),
+        ),
+      _RoleDestination(
+        label: 'Caregiver',
+        icon: Icons.favorite_outline,
+        keyId: 'role-caregiver',
+        badgeCount: alerts.length,
+        badgeSemantics: 'Caregiver, ${alerts.length} attention items',
+        view: const CaregiverView(),
+      ),
+      const _RoleDestination(
+        label: 'Provider',
+        icon: Icons.badge_outlined,
+        keyId: 'role-provider',
+        view: ProviderTimelineView(),
+      ),
+      const _RoleDestination(
+        label: 'Circle',
+        icon: Icons.group_outlined,
+        keyId: 'role-circle',
+        view: PeopleView(),
+      ),
+      const _RoleDestination(
+        label: 'Settings',
+        icon: Icons.settings_outlined,
+        keyId: 'role-settings',
+        view: SettingsView(),
+      ),
+    ];
 
     return Scaffold(
       appBar: AppBar(
@@ -130,10 +186,16 @@ class _RoleShellState extends ConsumerState<RoleShell> {
       body: Column(
         children: [
           _RoleSwitcher(
-            selected: _role,
-            attentionCount: alerts.length,
-            destinations: _destinations,
-            onSelected: (value) => setState(() => _role = value),
+            selected: role,
+            destinations: destinations,
+            onSelected: (value) {
+              if (value < people.length) {
+                ref
+                    .read(selectedPatientProvider.notifier)
+                    .select(people[value].id);
+              }
+              setState(() => _role = value);
+            },
           ),
           const DemoClockBar(),
           if (persistence.phase == PersistencePhase.failed)
@@ -141,9 +203,9 @@ class _RoleShellState extends ConsumerState<RoleShell> {
           const Divider(height: 1),
           Expanded(
             child: IndexedStack(
-              index: _role,
+              index: role,
               children: [
-                for (final destination in _destinations) destination.view,
+                for (final destination in destinations) destination.view,
               ],
             ),
           ),
@@ -156,13 +218,11 @@ class _RoleShellState extends ConsumerState<RoleShell> {
 class _RoleSwitcher extends StatelessWidget {
   const _RoleSwitcher({
     required this.selected,
-    required this.attentionCount,
     required this.destinations,
     required this.onSelected,
   });
 
   final int selected;
-  final int attentionCount;
   final List<_RoleDestination> destinations;
   final ValueChanged<int> onSelected;
 
@@ -191,16 +251,14 @@ class _RoleSwitcher extends StatelessWidget {
                   value: i,
                   label: Text(
                     destinations[i].label,
-                    key: ValueKey(
-                      'role-${destinations[i].label.toLowerCase()}',
-                    ),
+                    key: ValueKey(destinations[i].keyId),
                   ),
-                  icon: i == 1
+                  icon: destinations[i].badgeSemantics != null
                       ? Semantics(
-                          label: 'Caregiver, $attentionCount attention items',
+                          label: destinations[i].badgeSemantics,
                           child: Badge(
-                            isLabelVisible: attentionCount > 0,
-                            label: Text('$attentionCount'),
+                            isLabelVisible: destinations[i].badgeCount > 0,
+                            label: Text('${destinations[i].badgeCount}'),
                             child: Icon(destinations[i].icon),
                           ),
                         )

@@ -516,6 +516,25 @@ final caregiverAlertsProvider = Provider<List<ScheduledDose>>((ref) {
   return attention;
 });
 
+/// Red-badge count for one patient's own tab: yesterday's unanswered
+/// questions plus today's urgent unknowns that need that person's action.
+final patientAttentionCountProvider = Provider.family<int, String>((
+  ref,
+  personId,
+) {
+  final pending = ref.watch(pendingQuestionsProvider(personId)).length;
+  final urgent = ref
+      .watch(todayDosesProvider(personId))
+      .where(
+        (dose) =>
+            dose.status == DoseStatus.notMarked &&
+            (dose.urgency == DoseUrgency.lateReminder ||
+                dose.urgency == DoseUrgency.question),
+      )
+      .length;
+  return pending + urgent;
+});
+
 class AdherenceStats {
   const AdherenceStats({
     required this.taken,
