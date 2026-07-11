@@ -2,7 +2,7 @@
 
 ## 2026-07-11 — Phase 2 hardening
 
-**Status:** implementation and local verification complete.
+**Status:** implementation, public CI, Windows release build, and web deployment complete.
 
 ### Added
 
@@ -36,15 +36,19 @@
 - `DOSEKEEPER_CAPTURE_SCREENSHOTS=true flutter test test/screenshot_capture_test.dart --update-goldens` — pass, five captures generated and inspected.
 - `flutter build web --release` — pass; Wasm compatibility dry run also passed.
 - Brand asset generator `--check` — pass for web PNGs and the multi-resolution Windows icon.
-- Local Windows release build is blocked before compilation because Windows Developer Mode/symlink support is disabled; the checked-in manual Windows CI workflow is the clean-machine verification lane.
+- GitHub Flutter CI — pass on Ubuntu for formatting, analysis, 30 active tests, and the web release build.
+- GitHub Pages — deploy pass; the public HTML, manifest, and Flutter bootstrap asset each returned HTTP 200.
+- Windows release workflow — pass on `windows-latest`; the x64 release bundle was uploaded as a build artifact.
+- This workstation still cannot start a local Windows plugin build until Developer Mode/symlink support is enabled; the clean GitHub runner completed the same release target successfully.
 
 ### Honest state
 
 - v0.1 is local/offline only; no Firestore, cross-device sync, accounts, or OS notifications are claimed.
 - All bundled family and medication data is fictional.
 - Five headless Flutter release screenshots are committed and linked from the README.
-- The GitHub Pages URL remains a deployment target until the public workflow completes successfully.
+- The web release is live at [xyloth.github.io/dosekeeper](https://xyloth.github.io/dosekeeper/).
+- Windows is compiled in CI; the resulting desktop bundle has not been manually launched on this workstation.
 
 ### Next
 
-- Publish the verified commits, let GitHub CI/Pages run, verify the public Pages URL, and hand the branch to the independent Claude audit.
+- Hand the verified branch, public repository, workflow evidence, and live release to the independent Claude audit.

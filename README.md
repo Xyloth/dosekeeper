@@ -2,13 +2,14 @@
 
 [![Flutter CI](https://github.com/Xyloth/dosekeeper/actions/workflows/ci.yml/badge.svg)](https://github.com/Xyloth/dosekeeper/actions/workflows/ci.yml)
 [![Deploy to GitHub Pages](https://github.com/Xyloth/dosekeeper/actions/workflows/pages.yml/badge.svg)](https://github.com/Xyloth/dosekeeper/actions/workflows/pages.yml)
+[![Windows build](https://github.com/Xyloth/dosekeeper/actions/workflows/windows.yml/badge.svg)](https://github.com/Xyloth/dosekeeper/actions/workflows/windows.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-0E7C7B.svg)](LICENSE)
 
 DoseKeeper is a Flutter medication care-coordination demo built around one deliberately strict idea: **taken, missed, and not marked are three different states**. A person marks a dose in the Patient view, and the Caregiver and Provider views react to the same Riverpod state without passing data between screens.
 
 > The care circle and medication names are fictional. DoseKeeper is a personal/family coordination demo, not a medical device. It does not provide dosage guidance, interaction checking, reminders guaranteed to fire, or medical advice.
 
-**Deployment target:** [xyloth.github.io/dosekeeper](https://xyloth.github.io/dosekeeper/) · **Platform targets:** web (verified) and Windows (CI bonus lane) · **Cost:** free/open-source tooling only
+**Live demo:** [xyloth.github.io/dosekeeper](https://xyloth.github.io/dosekeeper/) · **Platforms:** web (live) and Windows (CI-verified release build) · **Cost:** free/open-source tooling only
 
 ## What the demo proves
 
