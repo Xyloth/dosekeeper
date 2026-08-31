@@ -1,15 +1,38 @@
-# DoseKeeper
+# DoseKeeper — one medication truth across five care perspectives
 
 [![Flutter CI](https://github.com/Xyloth/dosekeeper/actions/workflows/ci.yml/badge.svg)](https://github.com/Xyloth/dosekeeper/actions/workflows/ci.yml)
 [![Deploy to GitHub Pages](https://github.com/Xyloth/dosekeeper/actions/workflows/pages.yml/badge.svg)](https://github.com/Xyloth/dosekeeper/actions/workflows/pages.yml)
 [![Windows build](https://github.com/Xyloth/dosekeeper/actions/workflows/windows.yml/badge.svg)](https://github.com/Xyloth/dosekeeper/actions/workflows/windows.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-0E7C7B.svg)](LICENSE)
 
-DoseKeeper is a Flutter medication care-coordination demo built around one deliberately strict idea: **taken, missed, and not marked are three different states**. A person marks a dose in the Patient view, and the Caregiver and Provider views react to the same Riverpod state without passing data between screens.
+DoseKeeper is a deployed Flutter/Riverpod care-coordination demo built around one deliberately strict idea: **taken, missed, and not marked are three different states**. A person marks a dose in the Patient view, and the Caregiver and Provider views react to the same persisted state graph without screens passing data to one another.
 
 > The care circle and medication names are fictional. DoseKeeper is a personal/family coordination demo, not a medical device. It does not provide dosage guidance, interaction checking, reminders guaranteed to fire, or medical advice.
 
-**Live demo:** [xyloth.github.io/dosekeeper](https://xyloth.github.io/dosekeeper/) · **Platforms:** web (live) and Windows (CI-verified release build) · **Cost:** free/open-source tooling only
+**[Open the live demo](https://xyloth.github.io/dosekeeper/)** · **[Read the design contract](DESIGN.md)** · **[Inspect the CI](https://github.com/Xyloth/dosekeeper/actions/workflows/ci.yml)**
+
+## Prove it in 60 seconds
+
+No account or setup is required. The banner identifies the bundled family as fictional.
+
+1. In **Grandma Rose**, mark an amber dose as taken.
+2. Open **Caregiver**. The attention count and Rose's status update from the same state mutation—no refresh.
+3. Open **Provider**. The identical event appears in the live Today panel and the three-state history.
+4. Move the labeled **Demo clock** beyond a dose window. The app asks a human to distinguish “missed” from “taken, forgot to mark”; it never guesses.
+5. Correct or undo the answer and watch every perspective reconcile again.
+
+| Patient mutation | Caregiver consequence | Provider consequence |
+| --- | --- | --- |
+| ![Patient view with one taken dose and unresolved amber doses](docs/screenshots/patient.png) | ![Caregiver dashboard separating a confirmed miss from unresolved doses](docs/screenshots/caregiver.png) | ![Provider live Today panel and adherence history](docs/screenshots/provider.png) |
+
+### Engineering evidence behind the interaction
+
+| Claim | Verifiable evidence |
+| --- | --- |
+| One state graph feeds five role views | Riverpod derived providers over `careCircleProvider`; widget tests perform a Patient tap and assert Caregiver and Provider output. |
+| The three-state invariant survives time and reloads | Domain, persistence, injected-clock, threshold, rollover, and correction tests run in CI. |
+| It ships, rather than stopping at screenshots | GitHub Pages builds and deploys the web release; a separate Windows runner compiles the x64 bundle. |
+| The architecture has a defined boundary | `LocalRepo` implements the repository contract today; cloud sync is explicitly a future implementation, not a current claim. |
 
 ## What the demo proves
 
@@ -31,15 +54,13 @@ DoseKeeper is a Flutter medication care-coordination demo built around one delib
 | Circle | Read-only fictional people, medications, and human-readable schedules. |
 | Settings | Demo-clock explanation, example-data reset, persistence state, and safety/disclaimer information. |
 
-## Verified release views
+## Remaining verified release views
 
 These are deterministic 1440×1000 captures of the full Flutter widget tree with the bundled fictional family—not mockups.
 
-| Patient | Caregiver | Provider |
-| --- | --- | --- |
-| ![Patient view with one taken dose and unresolved amber doses](docs/screenshots/patient.png) | ![Caregiver dashboard separating a confirmed miss from unresolved doses](docs/screenshots/caregiver.png) | ![Provider live Today panel and adherence history](docs/screenshots/provider.png) |
-| Circle | Settings | |
-| ![Fictional care circle and schedules](docs/screenshots/circle.png) | ![Settings, persistence state, demo clock explanation, and disclaimer](docs/screenshots/settings.png) | |
+| Circle | Settings |
+| --- | --- |
+| ![Fictional care circle and schedules](docs/screenshots/circle.png) | ![Settings, persistence state, demo clock explanation, and disclaimer](docs/screenshots/settings.png) |
 
 [`docs/screenshots/`](docs/screenshots/) contains the reproducible capture command and state contract.
 
@@ -101,15 +122,6 @@ flutter build web --release
 ```
 
 The tests cover domain-state integrity, persistence/reload behavior, time boundaries, selection stability, and the headline widget flow: a Patient interaction updates Caregiver and Provider UI from shared state.
-
-## 60-second demo
-
-1. **0–8s:** Point out the fictional-data banner and the five role views.
-2. **8–20s:** In Patient, select Grandma Rose and mark an unmarked dose taken.
-3. **20–32s:** Open Caregiver; show that the attention count and Rose’s chips changed without a refresh.
-4. **32–42s:** Open Provider; show the same event in the live Today panel and the historical three-state legend.
-5. **42–53s:** Move the labeled demo clock past a window. Answer the human-only question once as “missed” and once as “taken, forgot to mark.”
-6. **53–60s:** Correct/undo one answer and show the other views follow; finish on Settings and the local-only disclaimer.
 
 ## Deployment
 
